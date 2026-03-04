@@ -37,3 +37,11 @@ def traversal_files(base):
         for f in fs:
             fullname = os.path.join(root, f)
             yield fullname
+
+if __name__ == '__main__':
+    path_s = get_project_base_directory()
+    print(path_s)
+    realpath = os.path.realpath(__file__)
+    print(realpath)
+    print(f"os.pardir: {os.pardir}")
+

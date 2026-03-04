@@ -72,6 +72,23 @@ class GraphExtractor(Extractor):
         self._left_token_count = llm_invoker.max_length - num_tokens_from_string(self._entity_extract_prompt.format(**self._context_base, input_text=""))
         self._left_token_count = max(llm_invoker.max_length * 0.6, self._left_token_count)
 
+    """
+    对单个文本块的大致流程：
+        首次抽取
+            用 entity_extraction 类 Prompt，让模型从这段文本中：
+            识别指定类型的实体（如 person、organization、geo、event、category 等）；
+            识别实体之间的关系（谁和谁相关、关系描述、强度、关键词等）。
+        多轮补充（gleaning）
+            在 _max_gleanings 轮内循环：
+            用 entity_continue_extraction 问“是否还有未列出的实体/关系”；
+            用 entity_if_loop_extraction 问“是否还有更多”（回答不是 "yes" 就结束）；
+            把每轮新抽到的内容拼到 final_result 里。
+        解析与建图
+            按 record_delimiter、completion_delimiter 等把 final_result 拆成多条记录；
+            用正则提取括号内的元组（实体或关系）；
+            调用父类 _entities_and_relations(chunk_key, records, tuple_delimiter)，得到 maybe_nodes 和 maybe_edges；
+            这些节点和边会汇总到上层，最终形成整篇文档对应的 NetworkX 图。
+    """
     async def _process_single_content(self, chunk_key_dp: tuple[str, str], chunk_seq: int, num_chunks: int, out_results, task_id=""):
         token_count = 0
         chunk_key = chunk_key_dp[0]

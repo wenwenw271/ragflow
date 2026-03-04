@@ -1441,7 +1441,7 @@ async def update_chunk(tenant_id, dataset_id, document_id, chunk_id):
     settings.docStoreConn.update({"id": chunk_id}, d, search.index_name(tenant_id), dataset_id)
     return get_result()
 
-
+# 检索文档入口
 @manager.route("/retrieval", methods=["POST"])  # noqa: F821
 @token_required
 async def retrieval_test(tenant_id):
@@ -1525,7 +1525,9 @@ async def retrieval_test(tenant_id):
                     format: float
                     description: Similarity score.
     """
+    # 获取请求体参数
     req = await get_request_json()
+
     if not req.get("dataset_ids"):
         return get_error_data_result("`dataset_ids` is required.")
     kb_ids = req["dataset_ids"]
@@ -1543,15 +1545,18 @@ async def retrieval_test(tenant_id):
         )
     if "question" not in req:
         return get_error_data_result("`question` is required.")
+
     page = int(req.get("page", 1))
     size = int(req.get("page_size", 30))
     question = req["question"]
     # Trim whitespace and validate question
     if isinstance(question, str):
+        # 问题预处理：去首尾所有空白字符
         question = question.strip()
     # Return empty result if question is empty or whitespace-only
     if not question:
         return get_result(data={"total": 0, "chunks": [], "doc_aggs": {}})
+
     doc_ids = req.get("document_ids", [])
     use_kg = req.get("use_kg", False)
     toc_enhance = req.get("toc_enhance", False)
@@ -1598,6 +1603,7 @@ async def retrieval_test(tenant_id):
             return get_error_data_result(message="Dataset not found!")
         embd_mdl = LLMBundle(kb.tenant_id, LLMType.EMBEDDING, llm_name=kb.embd_id)
 
+        # 重排序
         rerank_mdl = None
         if req.get("rerank_id"):
             rerank_mdl = LLMBundle(kb.tenant_id, LLMType.RERANK, llm_name=req["rerank_id"])
@@ -1605,6 +1611,7 @@ async def retrieval_test(tenant_id):
         if langs:
             question = await cross_languages(kb.tenant_id, None, question, langs)
 
+        # 问题关键词提取
         if req.get("keyword", False):
             chat_mdl = LLMBundle(kb.tenant_id, LLMType.CHAT)
             question += await keyword_extraction(chat_mdl, question)
