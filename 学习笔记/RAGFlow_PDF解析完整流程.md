@@ -26,6 +26,7 @@
 ### 2.1 文档上传与任务入队
 
 - **入口**：文档上传后由 `DocumentService` / 数据集相关 API 触发解析。
+- doc.py @manager.route("/datasets/<dataset_id>/chunks", methods=["POST"])
 - **任务拆分**：`api/db/services/task_service.py` 中的 `queue_tasks(doc, bucket, name, priority)`：
   - 若 `doc["type"] == FileType.PDF`：
     - 用 `PdfParser.total_page_number(doc["name"], file_bin)` 获取总页数。
